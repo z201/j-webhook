@@ -25,13 +25,10 @@ public class MainVerticle extends AbstractVerticle {
           System.out.println(stringStringEntry.getKey() + " " + stringStringEntry.getValue());
         }
         System.out.println(ctx.getBodyAsJson().toString());
-      })
-      .respond(
-        ctx -> ctx
-          .response()
+        ctx.response()
           .putHeader("Content-Type", "text/plain")
-          .end("hello world!"));
-
+          .end("hello world!");
+      });
     server.requestHandler(router).listen(8888, http -> {
       if (http.succeeded()) {
         startPromise.complete();
