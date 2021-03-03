@@ -20,8 +20,7 @@ public class MainVerticle extends AbstractVerticle {
     router
       .post("/info")
       .handler(ctx -> {
-        HttpServerRequest httpServerRequest = ctx.request();
-        MultiMap multiMap = httpServerRequest.headers();
+        MultiMap multiMap = ctx.request().headers();
         for (Map.Entry<String, String> stringStringEntry : multiMap) {
           System.out.println(stringStringEntry.getKey() + " " + stringStringEntry.getValue());
         }
