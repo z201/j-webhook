@@ -6,6 +6,7 @@ import io.vertx.core.Promise;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.ext.web.Router;
+import io.vertx.ext.web.handler.BodyHandler;
 
 import java.util.Map;
 
@@ -15,6 +16,7 @@ public class MainVerticle extends AbstractVerticle {
   public void start(Promise<Void> startPromise) throws Exception {
     HttpServer server = vertx.createHttpServer();
     Router router = Router.router(vertx);
+    router.route().handler(BodyHandler.create());
     router
       .post("/info")
       .handler(ctx -> {
