@@ -7,13 +7,12 @@ import io.vertx.ext.web.Router;
 
 public class MainVerticle extends AbstractVerticle {
 
-
   @Override
   public void start(Promise<Void> startPromise) throws Exception {
     HttpServer server = vertx.createHttpServer();
     Router router = Router.router(vertx);
     router
-      .get("/info")
+      .post("/info")
       .respond(
         ctx -> ctx
           .response()
