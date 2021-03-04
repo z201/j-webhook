@@ -1,0 +1,11 @@
+{
+  "http.port" : 8888,
+  "github.secret" : "ppzIK43Mp3lEo1p1j2u5RSt0V5ZpnjxewEMm4SI5mWGUmaCj",
+  "github.repository" : [
+    {
+      "name": "web-stack-z",
+      "ssh.url":"git@github.com:z201/web-stack-z.git",
+      "script.path":"/Users/zengqingfeng/word/2021/j-webhook/deploying.sh"
+    }
+  ]
+}
