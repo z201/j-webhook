@@ -5,7 +5,7 @@
     {
       "name": "web-stack-z",
       "ssh.url":"git@github.com:z201/web-stack-z.git",
-      "script.path":"/Users/zengqingfeng/word/2021/j-webhook/deploying.sh"
+      "script.path":"deploying.sh"
     }
   ]
 }
