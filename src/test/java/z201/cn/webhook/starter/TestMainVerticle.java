@@ -26,7 +26,7 @@ public class TestMainVerticle {
   @Test
   void helloHttp(Vertx vertx, VertxTestContext testContext) throws Throwable {
     HttpClient client = vertx.createHttpClient();
-    client.request(HttpMethod.GET, 8888, "localhost", "/info")
+    client.request(HttpMethod.GET, 8888, "localhost", "/")
       .compose(req -> req.send().compose(HttpClientResponse::body))
       .onComplete(testContext.succeeding(buffer -> testContext.verify(() -> {
         System.out.println(buffer.toString());

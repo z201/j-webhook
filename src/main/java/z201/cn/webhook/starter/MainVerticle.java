@@ -33,66 +33,74 @@ public class MainVerticle extends AbstractVerticle {
     HttpServer server = vertx.createHttpServer();
     Router router = Router.router(vertx);
     router.route().handler(BodyHandler.create());
-    String secret = config().getString(ConfKey.GITHUB_SECRET_KEY);
-    JsonArray repositoryArray = config().getJsonArray(ConfKey.GITHUB_REPOSITORY_KEY);
-    Map<String, String> repositoryMap = new HashMap<>();
-    if (null == repositoryArray) {
-      System.out.println("The configuration file github.repository is not set");
-    } else {
-      if (repositoryArray.isEmpty()) {
-        System.out.println("The configuration file github.repository is not set");
-      }
-      repositoryArray.stream().filter(Objects::nonNull).forEach(i -> {
-        String json = i.toString();
-        JsonObject jsonObject = new JsonObject(json);
-        if (jsonObject.isEmpty()) {
-          return;
-        }
-        if (!jsonObject.containsKey(ConfKey.NAME_KEY)) {
-          System.out.println("The configuration file github.repository.name is not set");
-          return;
-        }
-        if (StrUtil.isEmptyIfStr(jsonObject.getString(ConfKey.SSH_URL_KEY))) {
-          System.out.println("The configuration file github.repository.ssh.url is not set");
-          return;
-        }
-        if (StrUtil.isEmptyIfStr(jsonObject.getString(ConfKey.SCRIPT_PATH_KEY))) {
-          System.out.println("The configuration file github.repository.script.path is not set");
-          return;
-        }
-        repositoryMap.put(jsonObject.getString(ConfKey.SSH_URL_KEY), jsonObject.getString(ConfKey.SCRIPT_PATH_KEY));
-      });
-    }
+    router
+      .get("/")
+      .respond(ctx -> ctx.response()
+        .putHeader("Content-Type", "text/plain")
+        .end("Succeeded"));
     router
       .post("/info")
       .handler(ctx -> {
+        if (!config().containsKey(ConfKey.GITHUB_SECRET_KEY)) {
+          System.out.println("The configuration file github.webhook.secret is not set");
+        }
+        String secret = config().getString(ConfKey.GITHUB_SECRET_KEY);
+        JsonArray repositoryArray = config().getJsonArray(ConfKey.GITHUB_REPOSITORY_KEY);
+        Map<String, String> repositoryMap = new HashMap<>();
+        if (null == repositoryArray) {
+          System.out.println("The configuration file github.repository is not set");
+        } else {
+          if (repositoryArray.isEmpty()) {
+            System.out.println("The configuration file github.repository is not set");
+          }
+          repositoryArray.stream().filter(Objects::nonNull).forEach(i -> {
+            String json = i.toString();
+            JsonObject jsonObject = new JsonObject(json);
+            if (jsonObject.isEmpty()) {
+              System.out.println("The configuration file is not set");
+              return;
+            }
+            if (!jsonObject.containsKey(ConfKey.NAME_KEY)) {
+              System.out.println("The configuration file github.repository.name is not set");
+              return;
+            }
+            if (StrUtil.isEmptyIfStr(jsonObject.getString(ConfKey.SSH_URL_KEY))) {
+              System.out.println("The configuration file github.repository.ssh.url is not set");
+              return;
+            }
+            if (StrUtil.isEmptyIfStr(jsonObject.getString(ConfKey.SCRIPT_PATH_KEY))) {
+              System.out.println("The configuration file github.repository.script.path is not set");
+              return;
+            }
+            repositoryMap.put(jsonObject.getString(ConfKey.SSH_URL_KEY), jsonObject.getString(ConfKey.SCRIPT_PATH_KEY));
+          });
+        }
         MultiMap multiMap = ctx.request().headers();
         String signature = multiMap.get("X-Hub-Signature"); // 被触发的事件的名称
         JsonObject payloadJson = ctx.getBodyAsJson();
+        Boolean state = false;
         if (StrUtil.isEmptyIfStr(signature) || payloadJson.isEmpty()) {
           ctx.response()
             .putHeader("Content-Type", "text/plain")
             .setStatusCode(400);
           ctx.end("Fail!");
-          return;
-        }
-        Boolean state = false;
-        if (payloadJson.containsKey(ConfKey.REPOSITORY_KEY)) {
-          if (payloadJson.getJsonObject(ConfKey.REPOSITORY_KEY).containsKey(ConfKey.GITHUB_REPOSITORY_SHH_URL_KEY)) {
-            String url = payloadJson.getJsonObject(ConfKey.REPOSITORY_KEY).getString(ConfKey.GITHUB_REPOSITORY_SHH_URL_KEY);
-            if (repositoryMap.containsKey(url)) {
-              String getSignature = getSignature(payloadJson.toString(), secret);
-              if (signature.equals(getSignature)) {
-                String path = repositoryMap.get(url);
-                if (FileUtil.exist(path)) {
-                  FileReader fileReader = new FileReader(path);
-                  String content = fileReader.readString();
-                  try {
-                    process(content);
-                    state = true;
-                  } catch (IOException e) {
-                    e.printStackTrace();
-                    System.out.println(e.getCause());
+        }else{
+          if (payloadJson.containsKey(ConfKey.REPOSITORY_KEY)) {
+            if (payloadJson.getJsonObject(ConfKey.REPOSITORY_KEY).containsKey(ConfKey.GITHUB_REPOSITORY_SHH_URL_KEY)) {
+              String url = payloadJson.getJsonObject(ConfKey.REPOSITORY_KEY).getString(ConfKey.GITHUB_REPOSITORY_SHH_URL_KEY);
+              if (repositoryMap.containsKey(url)) {
+                String getSignature = getSignature(payloadJson.toString(), secret);
+                if (signature.equals(getSignature)) {
+                  String path = repositoryMap.get(url);
+                  if (FileUtil.exist(path)) {
+                    FileReader fileReader = new FileReader(path);
+                    String content = fileReader.readString();
+                    try {
+                      process(content);
+                      state = true;
+                    } catch (IOException e) {
+                      System.out.println(e.getMessage());
+                    }
                   }
                 }
               }
@@ -110,13 +118,10 @@ public class MainVerticle extends AbstractVerticle {
             .end("Succeeded!");
         }
       });
+
     server.requestHandler(router).listen(config().getInteger(ConfKey.PORT_KEY, 8888), http -> {
       if (http.succeeded()) {
-        if (StrUtil.isEmptyIfStr(secret)) {
-          startPromise.fail("The configuration file github.webhook.secret is not set");
-        } else {
-          startPromise.complete();
-        }
+        startPromise.complete();
       } else {
         startPromise.fail(http.cause());
       }
